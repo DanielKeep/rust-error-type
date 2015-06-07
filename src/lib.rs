@@ -94,12 +94,18 @@ macro_rules! error_type_as_item {
 #[doc(hidden)]
 #[macro_export]
 macro_rules! error_type_var_body_emit {
+    /*
+    Nothing left.
+    */
     (
         $err_name:ident, $var_name:ident, $var_ty:ty, $ed_tr:ident, $ec_tr:ident
     ) => {
         // Done.
     };
 
+    /*
+    desc () clause.
+    */
     (
         $err_name:ident, $var_name:ident, $var_ty:ty, $ed_tr:ident, $ec_tr:ident,
         desc ()
@@ -116,6 +122,9 @@ macro_rules! error_type_var_body_emit {
         }
     };
 
+    /*
+    desc ((arg) expr) clause.
+    */
     (
         $err_name:ident, $var_name:ident, $var_ty:ty, $ed_tr:ident, $ec_tr:ident,
         desc (($desc_arg:ident) $desc_expr:expr)
@@ -133,6 +142,9 @@ macro_rules! error_type_var_body_emit {
         }
     };
 
+    /*
+    cause () clause.
+    */
     (
         $err_name:ident, $var_name:ident, $var_ty:ty, $ed_tr:ident, $ec_tr:ident,
         cause ()
@@ -149,6 +161,9 @@ macro_rules! error_type_var_body_emit {
         }
     };
 
+    /*
+    cause ((arg) expr) clause.
+    */
     (
         $err_name:ident, $var_name:ident, $var_ty:ty, $ed_tr:ident, $ec_tr:ident,
         cause (($cl_arg:ident) $cl_expr:expr)
@@ -166,6 +181,9 @@ macro_rules! error_type_var_body_emit {
         }
     };
 
+    /*
+    from ((arg: ty) expr) clause.
+    */
     (
         $err_name:ident, $var_name:ident, $var_ty:ty, $ed_tr:ident, $ec_tr:ident,
         from ($(($cl_arg:ident: $cl_ty:ty) $cl_expr:expr);*)
@@ -188,6 +206,9 @@ macro_rules! error_type_var_body_emit {
 #[doc(hidden)]
 #[macro_export]
 macro_rules! error_type_var_body {
+    /*
+    Base case: no more clauses.
+    */
     (
         $err_name:ident, $var_name:ident, $var_ty:ty, $ed_tr:ident, $ec_tr:ident,
         $desc:tt, $cause:tt, $from:tt; {}
@@ -198,6 +219,9 @@ macro_rules! error_type_var_body {
         }
     };
 
+    /*
+    desc (arg) expr;
+    */
     (
         $err_name:ident, $var_name:ident, $var_ty:ty, $ed_tr:ident, $ec_tr:ident,
         $desc:tt, $cause:tt, $from:tt; {
@@ -212,6 +236,9 @@ macro_rules! error_type_var_body {
         }
     };
 
+    /*
+    cause (arg) expr;
+    */
     (
         $err_name:ident, $var_name:ident, $var_ty:ty, $ed_tr:ident, $ec_tr:ident,
         $desc:tt, $cause:tt, $from:tt; {
@@ -226,6 +253,9 @@ macro_rules! error_type_var_body {
         }
     };
 
+    /*
+    cause;
+    */
     (
         $err_name:ident, $var_name:ident, $var_ty:ty, $ed_tr:ident, $ec_tr:ident,
         $desc:tt, $cause:tt, $from:tt; {
@@ -240,6 +270,9 @@ macro_rules! error_type_var_body {
         }
     };
 
+    /*
+    from (arg: Ty) expr; (first)
+    */
     (
         $err_name:ident, $var_name:ident, $var_ty:ty, $ed_tr:ident, $ec_tr:ident,
         $desc:tt, $cause:tt, (); {
@@ -254,6 +287,9 @@ macro_rules! error_type_var_body {
         }
     };
 
+    /*
+    from (arg: Ty) expr; (not first)
+    */
     (
         $err_name:ident, $var_name:ident, $var_ty:ty, $ed_tr:ident, $ec_tr:ident,
         $desc:tt, $cause:tt, ($($from:tt)*); {
