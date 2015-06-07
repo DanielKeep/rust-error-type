@@ -422,22 +422,4 @@ macro_rules! error_type {
             }
         }
     };
-
-    (
-        $(#[$($derive_tts:tt)*])*
-        pub enum $err_name:ident {
-            $($body_tts:tt)*
-        }
-        
-        $($tail:tt)*
-    ) => {
-        error_type_impl! {
-            $(#[$($derive_tts)*])*
-            (pub) enum $err_name {
-                $($body_tts)*
-            }
-        }
-        
-        error_type! { $($tail)* }
-    };
 }
