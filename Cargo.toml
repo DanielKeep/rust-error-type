@@ -2,3 +2,9 @@
 name = "error-type"
 version = "0.1.0"
 authors = ["Daniel Keep <daniel.keep@gmail.com>"]
+
+description = "Provides a macro for constructing unifying error types."
+repository = "https://github.com/DanielKeep/rust-error-type"
+readme = "README.md"
+keywords = ["error"]
+license = "MIT"
