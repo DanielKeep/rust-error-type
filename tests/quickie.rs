@@ -1,9 +1,16 @@
 #[macro_use] extern crate error_type;
 
+#[derive(Debug)]
+pub struct Kaboom;
+
 error_type! {
     #[derive(Debug)]
     pub enum AppError {
         Io(std::io::Error) { cause; },
+        Kaboom(Kaboom) {
+            disp (_e, fmt) write!(fmt, "kaboom!");
+            desc (_e) "kaboom!";
+        },
         Simple(std::borrow::Cow<'static, str>) {
             desc (e) &**e;
             from (s: &'static str) s.into();
@@ -26,6 +33,7 @@ fn test() {
     }
 
     let _: E = err!(std::io::Error::new(std::io::ErrorKind::Other, "oh no!"));
+    let _: E = err!(Kaboom);
     let _: E = err!("Test string");
     let _: E = err!(format!("Another test string"));
     let _: E = err!(std::borrow::Cow::Borrowed("Hi!"));

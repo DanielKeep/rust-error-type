@@ -17,6 +17,10 @@ error_type! {
         Io(std::io::Error) {
             cause;
         },
+        Kaboom(Kaboom) {
+            disp (e, fmt) write!(fmt, "{:?}", e);
+            desc (_e) "kaboom!";
+        },
         Message(Cow<'static, str>) {
             desc (e) &**e;
             from (s: &'static str) s.into();
@@ -28,6 +32,9 @@ error_type! {
         }
     }
 }
+
+#[derive(Debug)]
+pub struct Kaboom;
 # fn main() {}
 ```
 
@@ -48,6 +55,12 @@ The expansion of the above includes the following:
   - An automatic `cause`, forwarded to the existing definition for `std::io::Error`.
 
     **Note**: the automatic `cause` returns the result of `std::io::Error::cause`, *not* the payload itself.  This macro considers the payload to *be* the error, not the underlying cause.
+
+- For the `Kaboom` variant:
+
+  - An explicit `Display` override, since `Kaboom` does not, itself, implement it.
+
+  - An explicit `description`, which just returns a string literal.
 
 - For the `Message` variant:
 
@@ -98,27 +111,67 @@ macro_rules! error_type_var_body_emit {
     Nothing left.
     */
     (
-        $err_name:ident, $var_name:ident, $var_ty:ty, $ed_tr:ident, $ec_tr:ident
+        $err_name:ident, $var_name:ident, $var_ty:ty, $edi_tr:ident, $ede_tr:ident, $ec_tr:ident
     ) => {
         // Done.
+    };
+
+    /*
+    disp () clause.
+    */
+    (
+        $err_name:ident, $var_name:ident, $var_ty:ty, $edi_tr:ident, $ede_tr:ident, $ec_tr:ident,
+        disp ()
+        $($tail:tt)*
+    ) => {
+        impl<'a> $edi_tr for (&'a $err_name, &'a $var_ty) {
+            fn error_fmt(&self, fmt: &mut std::fmt::Formatter) -> Result<(), std::fmt::Error> {
+                std::fmt::Display::fmt(self.1, fmt)
+            }
+        }
+
+        error_type_var_body_emit! {
+            $err_name, $var_name, $var_ty, $edi_tr, $ede_tr, $ec_tr $($tail)*
+        }
+    };
+
+    /*
+    disp ((arg, fmt) expr) clause.
+    */
+    (
+        $err_name:ident, $var_name:ident, $var_ty:ty, $edi_tr:ident, $ede_tr:ident, $ec_tr:ident,
+        disp (($disp_arg:ident, $disp_fmt:ident) $disp_expr:expr)
+        $($tail:tt)*
+    ) => {
+        impl<'a> $edi_tr for (&'a $err_name, &'a $var_ty) {
+            fn error_fmt(&self, fmt: &mut std::fmt::Formatter) -> Result<(), std::fmt::Error> {
+                let $disp_arg = self.1;
+                let $disp_fmt = fmt;
+                $disp_expr
+            }
+        }
+
+        error_type_var_body_emit! {
+            $err_name, $var_name, $var_ty, $edi_tr, $ede_tr, $ec_tr $($tail)*
+        }
     };
 
     /*
     desc () clause.
     */
     (
-        $err_name:ident, $var_name:ident, $var_ty:ty, $ed_tr:ident, $ec_tr:ident,
+        $err_name:ident, $var_name:ident, $var_ty:ty, $edi_tr:ident, $ede_tr:ident, $ec_tr:ident,
         desc ()
         $($tail:tt)*
     ) => {
-        impl<'a> $ed_tr<'a> for (&'a $err_name, &'a $var_ty) {
+        impl<'a> $ede_tr<'a> for (&'a $err_name, &'a $var_ty) {
             fn error_desc(&self) -> &'a str {
                 std::error::Error::description(self.1)
             }
         }
 
         error_type_var_body_emit! {
-            $err_name, $var_name, $var_ty, $ed_tr, $ec_tr $($tail)*
+            $err_name, $var_name, $var_ty, $edi_tr, $ede_tr, $ec_tr $($tail)*
         }
     };
 
@@ -126,11 +179,11 @@ macro_rules! error_type_var_body_emit {
     desc ((arg) expr) clause.
     */
     (
-        $err_name:ident, $var_name:ident, $var_ty:ty, $ed_tr:ident, $ec_tr:ident,
+        $err_name:ident, $var_name:ident, $var_ty:ty, $edi_tr:ident, $ede_tr:ident, $ec_tr:ident,
         desc (($desc_arg:ident) $desc_expr:expr)
         $($tail:tt)*
     ) => {
-        impl<'a> $ed_tr<'a> for (&'a $err_name, &'a $var_ty) {
+        impl<'a> $ede_tr<'a> for (&'a $err_name, &'a $var_ty) {
             fn error_desc(&self) -> &'a str {
                 let $desc_arg = self.1;
                 $desc_expr
@@ -138,7 +191,7 @@ macro_rules! error_type_var_body_emit {
         }
         
         error_type_var_body_emit! {
-            $err_name, $var_name, $var_ty, $ed_tr, $ec_tr $($tail)*
+            $err_name, $var_name, $var_ty, $edi_tr, $ede_tr, $ec_tr $($tail)*
         }
     };
 
@@ -146,7 +199,7 @@ macro_rules! error_type_var_body_emit {
     cause () clause.
     */
     (
-        $err_name:ident, $var_name:ident, $var_ty:ty, $ed_tr:ident, $ec_tr:ident,
+        $err_name:ident, $var_name:ident, $var_ty:ty, $edi_tr:ident, $ede_tr:ident, $ec_tr:ident,
         cause ()
         $($tail:tt)*
     ) => {
@@ -157,7 +210,7 @@ macro_rules! error_type_var_body_emit {
         }
 
         error_type_var_body_emit! {
-            $err_name, $var_name, $var_ty, $ed_tr, $ec_tr $($tail)*
+            $err_name, $var_name, $var_ty, $edi_tr, $ede_tr, $ec_tr $($tail)*
         }
     };
 
@@ -165,7 +218,7 @@ macro_rules! error_type_var_body_emit {
     cause ((arg) expr) clause.
     */
     (
-        $err_name:ident, $var_name:ident, $var_ty:ty, $ed_tr:ident, $ec_tr:ident,
+        $err_name:ident, $var_name:ident, $var_ty:ty, $edi_tr:ident, $ede_tr:ident, $ec_tr:ident,
         cause (($cl_arg:ident) $cl_expr:expr)
         $($tail:tt)*
     ) => {
@@ -177,7 +230,7 @@ macro_rules! error_type_var_body_emit {
         }
         
         error_type_var_body_emit! {
-            $err_name, $var_name, $var_ty, $ed_tr, $ec_tr $($tail)*
+            $err_name, $var_name, $var_ty, $edi_tr, $ede_tr, $ec_tr $($tail)*
         }
     };
 
@@ -185,7 +238,7 @@ macro_rules! error_type_var_body_emit {
     from ((arg: ty) expr) clause.
     */
     (
-        $err_name:ident, $var_name:ident, $var_ty:ty, $ed_tr:ident, $ec_tr:ident,
+        $err_name:ident, $var_name:ident, $var_ty:ty, $edi_tr:ident, $ede_tr:ident, $ec_tr:ident,
         from ($(($cl_arg:ident: $cl_ty:ty) $cl_expr:expr);*)
         $($tail:tt)*
     ) => {
@@ -198,7 +251,7 @@ macro_rules! error_type_var_body_emit {
         )*
 
         error_type_var_body_emit! {
-            $err_name, $var_name, $var_ty, $ed_tr, $ec_tr $($tail)*
+            $err_name, $var_name, $var_ty, $edi_tr, $ede_tr, $ec_tr $($tail)*
         }
     };
 }
@@ -210,12 +263,29 @@ macro_rules! error_type_var_body {
     Base case: no more clauses.
     */
     (
-        $err_name:ident, $var_name:ident, $var_ty:ty, $ed_tr:ident, $ec_tr:ident,
-        $desc:tt, $cause:tt, $from:tt; {}
+        $err_name:ident, $var_name:ident, $var_ty:ty, $edi_tr:ident, $ede_tr:ident, $ec_tr:ident,
+        $disp:tt, $desc:tt, $cause:tt, $from:tt; {}
     ) => {
         error_type_var_body_emit! {
-            $err_name, $var_name, $var_ty, $ed_tr, $ec_tr,
-            desc $desc, cause $cause, from $from
+            $err_name, $var_name, $var_ty, $edi_tr, $ede_tr, $ec_tr,
+            disp $disp, desc $desc, cause $cause, from $from
+        }
+    };
+
+    /*
+    disp (arg, fmt) expr;
+    */
+    (
+        $err_name:ident, $var_name:ident, $var_ty:ty, $edi_tr:ident, $ede_tr:ident, $ec_tr:ident,
+        $disp:tt, $desc:tt, $cause:tt, $from:tt; {
+            disp ($cl_arg:ident, $cl_fmt:ident) $cl_body:expr;
+            $($tail:tt)*
+        }
+    ) => {
+        error_type_var_body! {
+            $err_name, $var_name, $var_ty, $edi_tr, $ede_tr, $ec_tr,
+            (($cl_arg, $cl_fmt) $cl_body), $desc, $cause, $from;
+            {$($tail)*}
         }
     };
 
@@ -223,15 +293,15 @@ macro_rules! error_type_var_body {
     desc (arg) expr;
     */
     (
-        $err_name:ident, $var_name:ident, $var_ty:ty, $ed_tr:ident, $ec_tr:ident,
-        $desc:tt, $cause:tt, $from:tt; {
+        $err_name:ident, $var_name:ident, $var_ty:ty, $edi_tr:ident, $ede_tr:ident, $ec_tr:ident,
+        $disp:tt, $desc:tt, $cause:tt, $from:tt; {
             desc ($cl_arg:ident) $cl_body:expr;
             $($tail:tt)*
         }
     ) => {
         error_type_var_body! {
-            $err_name, $var_name, $var_ty, $ed_tr, $ec_tr,
-            (($cl_arg) $cl_body), $cause, $from;
+            $err_name, $var_name, $var_ty, $edi_tr, $ede_tr, $ec_tr,
+            $disp, (($cl_arg) $cl_body), $cause, $from;
             {$($tail)*}
         }
     };
@@ -240,15 +310,15 @@ macro_rules! error_type_var_body {
     cause (arg) expr;
     */
     (
-        $err_name:ident, $var_name:ident, $var_ty:ty, $ed_tr:ident, $ec_tr:ident,
-        $desc:tt, $cause:tt, $from:tt; {
+        $err_name:ident, $var_name:ident, $var_ty:ty, $edi_tr:ident, $ede_tr:ident, $ec_tr:ident,
+        $disp:tt, $desc:tt, $cause:tt, $from:tt; {
             cause ($cl_arg:ident) $cl_body:expr;
             $($tail:tt)*
         }
     ) => {
         error_type_var_body! {
-            $err_name, $var_name, $var_ty, $ed_tr, $ec_tr,
-            $desc, (($cl_arg) $cl_body), $from;
+            $err_name, $var_name, $var_ty, $edi_tr, $ede_tr, $ec_tr,
+            $disp, $desc, (($cl_arg) $cl_body), $from;
             {$($tail)*}
         }
     };
@@ -257,15 +327,15 @@ macro_rules! error_type_var_body {
     cause;
     */
     (
-        $err_name:ident, $var_name:ident, $var_ty:ty, $ed_tr:ident, $ec_tr:ident,
-        $desc:tt, $cause:tt, $from:tt; {
+        $err_name:ident, $var_name:ident, $var_ty:ty, $edi_tr:ident, $ede_tr:ident, $ec_tr:ident,
+        $disp:tt, $desc:tt, $cause:tt, $from:tt; {
             cause;
             $($tail:tt)*
         }
     ) => {
         error_type_var_body! {
-            $err_name, $var_name, $var_ty, $ed_tr, $ec_tr,
-            $desc, ((e) std::error::Error::cause(e)), $from;
+            $err_name, $var_name, $var_ty, $edi_tr, $ede_tr, $ec_tr,
+            $disp, $desc, ((e) std::error::Error::cause(e)), $from;
             {$($tail)*}
         }
     };
@@ -274,15 +344,15 @@ macro_rules! error_type_var_body {
     from (arg: Ty) expr; (first)
     */
     (
-        $err_name:ident, $var_name:ident, $var_ty:ty, $ed_tr:ident, $ec_tr:ident,
-        $desc:tt, $cause:tt, (); {
+        $err_name:ident, $var_name:ident, $var_ty:ty, $edi_tr:ident, $ede_tr:ident, $ec_tr:ident,
+        $disp:tt, $desc:tt, $cause:tt, (); {
             from ($cl_arg:ident: $cl_ty:ty) $cl_body:expr;
             $($tail:tt)*
         }
     ) => {
         error_type_var_body! {
-            $err_name, $var_name, $var_ty, $ed_tr, $ec_tr,
-            $desc, $cause, (($cl_arg: $cl_ty) $cl_body);
+            $err_name, $var_name, $var_ty, $edi_tr, $ede_tr, $ec_tr,
+            $disp, $desc, $cause, (($cl_arg: $cl_ty) $cl_body);
             {$($tail)*}
         }
     };
@@ -291,15 +361,15 @@ macro_rules! error_type_var_body {
     from (arg: Ty) expr; (not first)
     */
     (
-        $err_name:ident, $var_name:ident, $var_ty:ty, $ed_tr:ident, $ec_tr:ident,
-        $desc:tt, $cause:tt, ($($from:tt)*); {
+        $err_name:ident, $var_name:ident, $var_ty:ty, $edi_tr:ident, $ede_tr:ident, $ec_tr:ident,
+        $disp:tt, $desc:tt, $cause:tt, ($($from:tt)*); {
             from ($cl_arg:ident: $cl_ty:ty) $cl_body:expr;
             $($tail:tt)*
         }
     ) => {
         error_type_var_body! {
-            $err_name, $var_name, $var_ty, $ed_tr, $ec_tr,
-            $desc, $cause, (($cl_arg: $cl_ty) $cl_body; $($from)*);
+            $err_name, $var_name, $var_ty, $edi_tr, $ede_tr, $ec_tr,
+            $disp, $desc, $cause, (($cl_arg: $cl_ty) $cl_body; $($from)*);
             {$($tail)*}
         }
     };
@@ -327,10 +397,14 @@ macro_rules! error_type_impl {
             fn fmt(&self, fmt: &mut std::fmt::Formatter) -> Result<(), std::fmt::Error> {
                 match *self {
                     $(
-                        $err_name::$var_name(ref v) => std::fmt::Display::fmt(v, fmt)
+                        $err_name::$var_name(ref v) => (self, v).error_fmt(fmt)
                     ),+
                 }
             }
+        }
+
+        pub trait ErrorDisplay {
+            fn error_fmt(&self, &mut std::fmt::Formatter) -> Result<(), std::fmt::Error>;
         }
 
         pub trait ErrorDescription<'a> {
@@ -364,8 +438,8 @@ macro_rules! error_type_impl {
         $(
             error_type_var_body! {
                 $err_name, $var_name, $var_ty,
-                ErrorDescription, ErrorCause,
-                (), (), ();
+                ErrorDisplay, ErrorDescription, ErrorCause,
+                (), (), (), ();
                 $var_body
             }
         )+
