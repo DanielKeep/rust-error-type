@@ -125,7 +125,7 @@ macro_rules! error_type_var_body_emit {
         $($tail:tt)*
     ) => {
         impl<'a> $edi_tr for (&'a $err_name, &'a $var_ty) {
-            fn error_fmt(&self, fmt: &mut ::std::fmt::Formatter) -> Result<(), ::std::fmt::Error> {
+            fn error_fmt(&self, fmt: &mut ::std::fmt::Formatter) -> ::std::result::Result<(), ::std::fmt::Error> {
                 ::std::fmt::Display::fmt(self.1, fmt)
             }
         }
@@ -144,7 +144,7 @@ macro_rules! error_type_var_body_emit {
         $($tail:tt)*
     ) => {
         impl<'a> $edi_tr for (&'a $err_name, &'a $var_ty) {
-            fn error_fmt(&self, fmt: &mut ::std::fmt::Formatter) -> Result<(), ::std::fmt::Error> {
+            fn error_fmt(&self, fmt: &mut ::std::fmt::Formatter) -> ::std::result::Result<(), ::std::fmt::Error> {
                 let $disp_arg = self.1;
                 let $disp_fmt = fmt;
                 $disp_expr
@@ -204,7 +204,7 @@ macro_rules! error_type_var_body_emit {
         $($tail:tt)*
     ) => {
         impl<'a> $ec_tr<'a> for (&'a $err_name, &'a $var_ty) {
-            fn error_cause(&self) -> Option<&'a ::std::error::Error> {
+            fn error_cause(&self) -> ::std::option::Option<&'a ::std::error::Error> {
                 None
             }
         }
@@ -223,7 +223,7 @@ macro_rules! error_type_var_body_emit {
         $($tail:tt)*
     ) => {
         impl<'a> $ec_tr<'a> for (&'a $err_name, &'a $var_ty) {
-            fn error_cause(&self) -> Option<&'a ::std::error::Error> {
+            fn error_cause(&self) -> ::std::option::Option<&'a ::std::error::Error> {
                 let $cl_arg = self.1;
                 $cl_expr
             }
@@ -243,7 +243,7 @@ macro_rules! error_type_var_body_emit {
         $($tail:tt)*
     ) => {
         $(
-            impl From<$cl_ty> for $err_name {
+            impl ::std::convert::From<$cl_ty> for $err_name {
                 fn from($cl_arg: $cl_ty) -> $err_name {
                     $err_name::$var_name($cl_expr)
                 }
@@ -386,7 +386,7 @@ macro_rules! error_type_impl {
         }
     ) => {
         $(
-            impl From<$var_ty> for $err_name {
+            impl ::std::convert::From<$var_ty> for $err_name {
                 fn from(value: $var_ty) -> $err_name {
                     $err_name::$var_name(value)
                 }
@@ -394,7 +394,7 @@ macro_rules! error_type_impl {
         )+
         
         impl ::std::fmt::Display for $err_name {
-            fn fmt(&self, fmt: &mut ::std::fmt::Formatter) -> Result<(), ::std::fmt::Error> {
+            fn fmt(&self, fmt: &mut ::std::fmt::Formatter) -> ::std::result::Result<(), ::std::fmt::Error> {
                 match *self {
                     $(
                         $err_name::$var_name(ref v) => (self, v).error_fmt(fmt)
@@ -404,7 +404,7 @@ macro_rules! error_type_impl {
         }
 
         pub trait ErrorDisplay {
-            fn error_fmt(&self, &mut ::std::fmt::Formatter) -> Result<(), ::std::fmt::Error>;
+            fn error_fmt(&self, &mut ::std::fmt::Formatter) -> ::std::result::Result<(), ::std::fmt::Error>;
         }
 
         pub trait ErrorDescription<'a> {
@@ -412,7 +412,7 @@ macro_rules! error_type_impl {
         }
 
         pub trait ErrorCause<'a> {
-            fn error_cause(&self) -> Option<&'a ::std::error::Error>;
+            fn error_cause(&self) -> ::std::option::Option<&'a ::std::error::Error>;
         }
         
         impl ::std::error::Error for $err_name {
@@ -425,7 +425,7 @@ macro_rules! error_type_impl {
                 }
             }
             
-            fn cause(&self) -> Option<&::std::error::Error> {
+            fn cause(&self) -> ::std::option::Option<&::std::error::Error> {
                 use self::ErrorCause;
                 match *self {
                     $(
