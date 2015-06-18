@@ -125,8 +125,8 @@ macro_rules! error_type_var_body_emit {
         $($tail:tt)*
     ) => {
         impl<'a> $edi_tr for (&'a $err_name, &'a $var_ty) {
-            fn error_fmt(&self, fmt: &mut std::fmt::Formatter) -> Result<(), std::fmt::Error> {
-                std::fmt::Display::fmt(self.1, fmt)
+            fn error_fmt(&self, fmt: &mut ::std::fmt::Formatter) -> Result<(), ::std::fmt::Error> {
+                ::std::fmt::Display::fmt(self.1, fmt)
             }
         }
 
@@ -144,7 +144,7 @@ macro_rules! error_type_var_body_emit {
         $($tail:tt)*
     ) => {
         impl<'a> $edi_tr for (&'a $err_name, &'a $var_ty) {
-            fn error_fmt(&self, fmt: &mut std::fmt::Formatter) -> Result<(), std::fmt::Error> {
+            fn error_fmt(&self, fmt: &mut ::std::fmt::Formatter) -> Result<(), ::std::fmt::Error> {
                 let $disp_arg = self.1;
                 let $disp_fmt = fmt;
                 $disp_expr
@@ -166,7 +166,7 @@ macro_rules! error_type_var_body_emit {
     ) => {
         impl<'a> $ede_tr<'a> for (&'a $err_name, &'a $var_ty) {
             fn error_desc(&self) -> &'a str {
-                std::error::Error::description(self.1)
+                ::std::error::Error::description(self.1)
             }
         }
 
@@ -204,7 +204,7 @@ macro_rules! error_type_var_body_emit {
         $($tail:tt)*
     ) => {
         impl<'a> $ec_tr<'a> for (&'a $err_name, &'a $var_ty) {
-            fn error_cause(&self) -> Option<&'a std::error::Error> {
+            fn error_cause(&self) -> Option<&'a ::std::error::Error> {
                 None
             }
         }
@@ -223,7 +223,7 @@ macro_rules! error_type_var_body_emit {
         $($tail:tt)*
     ) => {
         impl<'a> $ec_tr<'a> for (&'a $err_name, &'a $var_ty) {
-            fn error_cause(&self) -> Option<&'a std::error::Error> {
+            fn error_cause(&self) -> Option<&'a ::std::error::Error> {
                 let $cl_arg = self.1;
                 $cl_expr
             }
@@ -335,7 +335,7 @@ macro_rules! error_type_var_body {
     ) => {
         error_type_var_body! {
             $err_name, $var_name, $var_ty, $edi_tr, $ede_tr, $ec_tr,
-            $disp, $desc, ((e) std::error::Error::cause(e)), $from;
+            $disp, $desc, ((e) ::std::error::Error::cause(e)), $from;
             {$($tail)*}
         }
     };
@@ -393,8 +393,8 @@ macro_rules! error_type_impl {
             }
         )+
         
-        impl std::fmt::Display for $err_name {
-            fn fmt(&self, fmt: &mut std::fmt::Formatter) -> Result<(), std::fmt::Error> {
+        impl ::std::fmt::Display for $err_name {
+            fn fmt(&self, fmt: &mut ::std::fmt::Formatter) -> Result<(), ::std::fmt::Error> {
                 match *self {
                     $(
                         $err_name::$var_name(ref v) => (self, v).error_fmt(fmt)
@@ -404,7 +404,7 @@ macro_rules! error_type_impl {
         }
 
         pub trait ErrorDisplay {
-            fn error_fmt(&self, &mut std::fmt::Formatter) -> Result<(), std::fmt::Error>;
+            fn error_fmt(&self, &mut ::std::fmt::Formatter) -> Result<(), ::std::fmt::Error>;
         }
 
         pub trait ErrorDescription<'a> {
@@ -412,12 +412,12 @@ macro_rules! error_type_impl {
         }
 
         pub trait ErrorCause<'a> {
-            fn error_cause(&self) -> Option<&'a std::error::Error>;
+            fn error_cause(&self) -> Option<&'a ::std::error::Error>;
         }
         
-        impl std::error::Error for $err_name {
+        impl ::std::error::Error for $err_name {
             fn description(&self) -> &str {
-                use ErrorDescription;
+                use self::ErrorDescription;
                 match *self {
                     $(
                         $err_name::$var_name(ref v) => (self, v).error_desc()
@@ -425,8 +425,8 @@ macro_rules! error_type_impl {
                 }
             }
             
-            fn cause(&self) -> Option<&std::error::Error> {
-                use ErrorCause;
+            fn cause(&self) -> Option<&::std::error::Error> {
+                use self::ErrorCause;
                 match *self {
                     $(
                         $err_name::$var_name(ref v) => (self, v).error_cause()
